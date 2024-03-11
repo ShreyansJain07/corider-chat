@@ -67,7 +67,6 @@ const Chat = () => {
     fetchData();
   }, []);
 
-  // Auto-scroll to the bottom when new messages are added
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
@@ -83,14 +82,14 @@ const Chat = () => {
   const handleSendMessage = () => {
     if (userMessage.trim() !== "") {
       const newMessage = {
-        id: Math.random().toString(36).substring(7), // Generate a unique ID for the new message
+        id: Math.random().toString(36).substring(7),
         message: userMessage,
         sender: {
           image:
-            "https://fastly.picsum.photos/id/1072/160/160.jpg?hmac=IDpbpA5neYzFjtkdFmBDKXwgr-907ewXLa9lLk9JuA8", // Set the sender's profile image
-          self: true, // Assume the message is sent by the user
+            "https://fastly.picsum.photos/id/1072/160/160.jpg?hmac=IDpbpA5neYzFjtkdFmBDKXwgr-907ewXLa9lLk9JuA8",
+          self: true,
         },
-        time: moment().format("YYYY-MM-DD HH:mm:ss"), // Get the current time
+        time: moment().format("YYYY-MM-DD HH:mm:ss"),
       };
       setMessages([...messages, newMessage]);
       setUserMessage("");
@@ -118,23 +117,15 @@ const Chat = () => {
         <div className="chat-group">
           <div className="chat-group-sec1">
             <div className="circle-container">
-              <img
-                src="https://fastly.picsum.photos/id/1072/160/160.jpg?hmac=IDpbpA5neYzFjtkdFmBDKXwgr-907ewXLa9lLk9JuA8"
-                alt="ph"
-              />
-              <img
-                src="https://fastly.picsum.photos/id/1072/160/160.jpg?hmac=IDpbpA5neYzFjtkdFmBDKXwgr-907ewXLa9lLk9JuA8"
-                alt="ph"
-              />
-              <img
-                src="https://fastly.picsum.photos/id/1072/160/160.jpg?hmac=IDpbpA5neYzFjtkdFmBDKXwgr-907ewXLa9lLk9JuA8"
-                alt="ph"
-              />
-              <img
-                src="https://fastly.picsum.photos/id/1072/160/160.jpg?hmac=IDpbpA5neYzFjtkdFmBDKXwgr-907ewXLa9lLk9JuA8"
-                alt="ph"
-              />
+              {Array.from(
+                new Set(messages.map((message) => message.sender.image))
+              )
+                .slice(0, 4)
+                .map((imageUrl, index) => (
+                  <img key={index} src={imageUrl} alt={`Profile ${index}`} />
+                ))}
             </div>
+
             <div className="chat-group-from">
               <div>
                 From{" "}
@@ -185,51 +176,43 @@ const Chat = () => {
         </div>
       </div>
 
-        <div className="chat" ref={chatRef}>
+      <div className="chat" ref={chatRef}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+          }}
+        >
+          <div style={{ flex: 1, height: "1px", backgroundColor: "#B7B7B7" }} />
+          <div>
+            <p style={{ width: "30vw", textAlign: "center", color: "#B7B7B7" }}>
+              {today}
+            </p>
+          </div>
+          <div style={{ flex: 1, height: "1px", backgroundColor: "#B7B7B7" }} />
+        </div>
+        {messages.map((message) => (
           <div
+            key={message.id}
             style={{
               display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
+              justifyContent: message.sender.self ? "flex-end" : "flex-start",
             }}
           >
+            {!message.sender.self && (
+              <img className="pfp" src={message.sender.image} alt="Profile" />
+            )}
             <div
-              style={{ flex: 1, height: "1px", backgroundColor: "#B7B7B7" }}
-            />
-            <div>
-              <p
-                style={{ width: "30vw", textAlign: "center", color: "#B7B7B7" }}
-              >
-                {today}
-              </p>
-            </div>
-            <div
-              style={{ flex: 1, height: "1px", backgroundColor: "#B7B7B7" }}
-            />
-          </div>
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              style={{
-                display: "flex",
-                justifyContent: message.sender.self ? "flex-end" : "flex-start",
-              }}
+              className={`message ${
+                message.sender.self ? "user-message" : "other-message"
+              }`}
             >
-              {!message.sender.self && (
-                <img className="pfp" src={message.sender.image} alt="Profile" />
-              )}
-              <div
-                className={`message ${
-                  message.sender.self ? "user-message" : "other-message"
-                }`}
-              >
-                <div className="message-bubble">
-                  {message.message.slice(0, 40)}
-                </div>
-              </div>
+              <div className="message-bubble">{message.message}</div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
+      </div>
 
       <div className="input-bar">
         <input
@@ -248,9 +231,9 @@ const Chat = () => {
           closeOnDocumentClick
         >
           <div className="tooltip">
-            <IoCameraOutline fontSize={24}/>
-            <IoVideocamOutline fontSize={24}/>
-            <LuFileDown fontSize={24}/>
+            <IoCameraOutline fontSize={24} />
+            <IoVideocamOutline fontSize={24} />
+            <LuFileDown fontSize={24} />
           </div>
         </Popup>
         <VscSend onClick={handleSendMessage} fontSize={24} />
