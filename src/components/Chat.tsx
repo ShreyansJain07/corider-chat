@@ -14,6 +14,7 @@ import Popup from "reactjs-popup";
 import { IoCameraOutline } from "react-icons/io5";
 import { IoVideocamOutline } from "react-icons/io5";
 import { LuFileDown } from "react-icons/lu";
+import Loader from "./Loaders"
 
 export interface Message {
   id: string;
@@ -39,7 +40,10 @@ const Chat = () => {
   const today = moment().format("DD MMM, YYYY");
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [info, setInfo] = useState<Data>();
-
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+const [currentPage, setCurrentPage] = useState(0);
+  
   const handleClose = () => {
     setAnchorEl(null);
   };
@@ -47,6 +51,7 @@ const Chat = () => {
   const handleClick = (event: any) => {
     setAnchorEl(event.currentTarget);
   };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -59,6 +64,9 @@ const Chat = () => {
         const data = await response.json();
         setMessages(data.chats);
         setInfo(data);
+        if (chatRef.current) {
+          chatRef.current.scrollTop = chatRef.current.scrollHeight;
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -68,10 +76,10 @@ const Chat = () => {
   }, []);
 
   useEffect(() => {
-    if (chatRef.current) {
+    if (isLoading && chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, isLoading]);  
 
   const handleUserMessageChange = (
     event: React.ChangeEvent<HTMLInputElement>
@@ -95,6 +103,71 @@ const Chat = () => {
       setUserMessage("");
     }
   };
+
+
+
+const fetchMoreMessages = async () => {
+  if (isLoading) return;
+  setIsLoading(true);
+
+  try {
+    const response = await fetch(
+      `https://qa.corider.in/assignment/chat?page=${currentPage + 1}`
+    );
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
+    const data = await response.json();
+
+    // Calculate the height of the current scrollable area
+    const currentScrollHeight = chatRef.current?.scrollHeight;
+
+    // Add a delay of 2 seconds before prepending new messages to the existing messages array
+    setTimeout(() => {
+      setMessages([...data.chats, ...messages]);
+
+      // Calculate the new height of the scrollable area
+      const newScrollHeight = chatRef.current?.scrollHeight || 0;
+
+      // Set the scroll position to maintain the user's position relative to the newly added messages
+      if (chatRef.current && currentScrollHeight) {
+        chatRef.current.scrollTop = chatRef.current.scrollTop + (newScrollHeight - currentScrollHeight);
+      }
+
+      // Update current page and loading state
+      setCurrentPage(currentPage + 1);
+      setIsLoading(false);
+    }, 2000); // 2 seconds delay
+  } catch (error) {
+    console.error("Error fetching more messages:", error);
+    setIsLoading(false);
+  }
+};
+
+
+const handleScroll = () => {
+  const scrollTop = chatRef.current?.scrollTop || 0;
+  const isAtTop = scrollTop === 0;
+  if (isAtTop) {
+    setScrollPosition(scrollTop);
+    fetchMoreMessages();
+  }
+};
+
+useEffect(() => {
+  if (chatRef.current) {
+    chatRef.current.addEventListener("scroll", handleScroll);
+  }
+
+  return () => {
+    if (chatRef.current) {
+      chatRef.current.removeEventListener("scroll", handleScroll);
+    }
+  };
+}, [messages]);
+
+
+
 
   return (
     <div
@@ -177,6 +250,7 @@ const Chat = () => {
       </div>
 
       <div className="chat" ref={chatRef}>
+      
         <div
           style={{
             display: "flex",
@@ -192,6 +266,9 @@ const Chat = () => {
           </div>
           <div style={{ flex: 1, height: "1px", backgroundColor: "#B7B7B7" }} />
         </div>
+        <div style={{display:"flex",justifyContent:"center",alignItems:"center"}}>
+          {isLoading && <Loader />}
+          </div>
         {messages.map((message) => (
           <div
             key={message.id}
@@ -208,10 +285,11 @@ const Chat = () => {
                 message.sender.self ? "user-message" : "other-message"
               }`}
             >
-              <div className="message-bubble">{message.message}</div>
+              <div className="message-bubble">{message.message.slice(0,140)}</div>
             </div>
           </div>
         ))}
+        
       </div>
 
       <div className="input-bar">
