@@ -40,7 +40,6 @@ const Chat = () => {
   const today = moment().format("DD MMM, YYYY");
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [info, setInfo] = useState<Data>();
-  const [scrollPosition, setScrollPosition] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 const [currentPage, setCurrentPage] = useState(0);
   
@@ -66,6 +65,8 @@ const [currentPage, setCurrentPage] = useState(0);
         setInfo(data);
         if (chatRef.current) {
           chatRef.current.scrollTop = chatRef.current.scrollHeight;
+          console.log("initial scroll");
+          
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -75,11 +76,13 @@ const [currentPage, setCurrentPage] = useState(0);
     fetchData();
   }, []);
 
-  useEffect(() => {
-    if (isLoading && chatRef.current) {
-      chatRef.current.scrollTop = chatRef.current.scrollHeight;
-    }
-  }, [messages, isLoading]);  
+  // useEffect(() => {
+  //   if (!isLoading && chatRef.current) {
+  //     chatRef.current.scrollTop = chatRef.current.scrollHeight;
+  //     console.log("is loading scroll");
+      
+  //   }
+  // }, [messages]);
 
   const handleUserMessageChange = (
     event: React.ChangeEvent<HTMLInputElement>
@@ -102,9 +105,9 @@ const [currentPage, setCurrentPage] = useState(0);
       setMessages([...messages, newMessage]);
       setUserMessage("");
     }
+    if (chatRef.current) 
+          chatRef.current.scrollTop = chatRef.current.scrollHeight;
   };
-
-
 
 const fetchMoreMessages = async () => {
   if (isLoading) return;
@@ -119,25 +122,18 @@ const fetchMoreMessages = async () => {
     }
     const data = await response.json();
 
-    // Calculate the height of the current scrollable area
     const currentScrollHeight = chatRef.current?.scrollHeight;
-
-    // Add a delay of 2 seconds before prepending new messages to the existing messages array
     setTimeout(() => {
       setMessages([...data.chats, ...messages]);
-
-      // Calculate the new height of the scrollable area
       const newScrollHeight = chatRef.current?.scrollHeight || 0;
 
-      // Set the scroll position to maintain the user's position relative to the newly added messages
       if (chatRef.current && currentScrollHeight) {
         chatRef.current.scrollTop = chatRef.current.scrollTop + (newScrollHeight - currentScrollHeight);
+        console.log("more data fetch scroll");
       }
-
-      // Update current page and loading state
       setCurrentPage(currentPage + 1);
       setIsLoading(false);
-    }, 2000); // 2 seconds delay
+    }, 2000);
   } catch (error) {
     console.error("Error fetching more messages:", error);
     setIsLoading(false);
@@ -146,10 +142,7 @@ const fetchMoreMessages = async () => {
 
 
 const handleScroll = () => {
-  const scrollTop = chatRef.current?.scrollTop || 0;
-  const isAtTop = scrollTop === 0;
-  if (isAtTop) {
-    setScrollPosition(scrollTop);
+  if (chatRef.current?.scrollTop === 0) {
     fetchMoreMessages();
   }
 };
@@ -157,6 +150,7 @@ const handleScroll = () => {
 useEffect(() => {
   if (chatRef.current) {
     chatRef.current.addEventListener("scroll", handleScroll);
+    
   }
 
   return () => {
@@ -165,9 +159,6 @@ useEffect(() => {
     }
   };
 }, [messages]);
-
-
-
 
   return (
     <div
